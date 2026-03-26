@@ -80,14 +80,18 @@ for (const jobId of Array.from(selectedJobIds)) {
 
   const { data, error } = await supabase
     .from('job_onet_activities')
-    .select(`
-      onet_activities (
-        id,
-        name,
-        description,
-        nace_competency_id
-      )
-    `)
+    const { data, error } = await supabase
+  .from('job_onet_activities')
+  .select(`
+    onet_activity_id,
+    onet_activities!job_onet_activities_onet_activity_id_fkey (
+      id,
+      name,
+      description,
+      nace_competency_id
+    )
+  `)
+  .eq('job_id', jobId);
     .eq('job_id', jobId);
 
   if (error) {
