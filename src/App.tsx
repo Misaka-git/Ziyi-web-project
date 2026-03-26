@@ -26,10 +26,6 @@ interface JobWithOnetActivities extends Job {
   onet_activities: OnetActivity[];
 }
 
-interface JobOnetActivityJoinRow {
-  onet_activities: OnetActivity | OnetActivity[] | null;
-}
-
 function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
@@ -44,13 +40,17 @@ function App() {
   }, []);
 
   async function loadJobs() {
+    setLoading(true);
+
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .order('category', { ascending: true });
+      .order('category', { ascending: true })
+      .order('title', { ascending: true });
 
     if (error) {
       console.error('Error loading jobs:', error);
+      setJobs([]);
     } else {
       setJobs(data || []);
     }
@@ -70,56 +70,66 @@ function App() {
     setSelectedJobIds(newSelected);
   }
 
-async function proceedToTaskSelection() {
-  if (selectedJobIds.size === 0) return;
+  async function proceedToTaskSelection() {
+    if (selectedJobIds.size === 0) return;
 
-  setLoading(true);
-  const jobsData: JobWithOnetActivities[] = [];
+    setLoading(true);
+    const jobsData: JobWithOnetActivities[] = [];
 
-  for (const jobId of Array.from(selectedJobIds)) {
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) continue;
+    for (const jobId of Array.from(selectedJobIds)) {
+      const job = jobs.find((j) => j.id === jobId);
+      if (!job) continue;
 
-    const { data: links, error: linksError } = await supabase
-      .from('job_onet_activities')
-      .select('onet_activity_id')
-      .eq('job_id', jobId);
+      const { data: links, error: linksError } = await supabase
+        .from('job_onet_activities')
+        .select('onet_activity_id')
+        .eq('job_id', jobId);
 
-    if (linksError) {
-      console.error('Error loading links:', linksError);
-      continue;
-    }
+      if (linksError) {
+        console.error(`Error loading activity links for job ${jobId}:`, linksError);
+        jobsData.push({
+          ...job,
+          onet_activities: [],
+        });
+        continue;
+      }
 
-    const activityIds = (links ?? []).map((row) => row.onet_activity_id);
+      const activityIds = (links ?? [])
+        .map((row) => row.onet_activity_id)
+        .filter(Boolean);
 
-    if (activityIds.length === 0) {
+      if (activityIds.length === 0) {
+        jobsData.push({
+          ...job,
+          onet_activities: [],
+        });
+        continue;
+      }
+
+      const { data: activities, error: activitiesError } = await supabase
+        .from('onet_activities')
+        .select('id, name, description, nace_competency_id')
+        .in('id', activityIds);
+
+      if (activitiesError) {
+        console.error(`Error loading activities for job ${jobId}:`, activitiesError);
+        jobsData.push({
+          ...job,
+          onet_activities: [],
+        });
+        continue;
+      }
+
       jobsData.push({
         ...job,
-        onet_activities: []
+        onet_activities: (activities ?? []) as OnetActivity[],
       });
-      continue;
     }
 
-    const { data: activities, error: activitiesError } = await supabase
-      .from('onet_activities')
-      .select('*')
-      .in('id', activityIds);
-
-    if (activitiesError) {
-      console.error('Error loading activities:', activitiesError);
-      continue;
-    }
-
-    jobsData.push({
-      ...job,
-      onet_activities: activities || []
-    });
+    setJobsWithActivities(jobsData);
+    setStep('select-tasks');
+    setLoading(false);
   }
-
-  setJobsWithActivities(jobsData);
-  setStep('select-tasks');
-  setLoading(false);
-}
 
   function toggleOnetActivity(jobId: string, activityId: string) {
     const newMap = new Map(selectedOnetActivities);
@@ -198,6 +208,27 @@ async function proceedToTaskSelection() {
     return acc;
   }, {} as Record<string, Job[]>);
 
+  const categoryOrder = [
+    'Academic',
+    'Clinical',
+    'Conservation',
+    'Industry',
+    'Leadership',
+    'Professional Development',
+    'Research',
+    'Teaching',
+    'Campus',
+    'Education',
+    'Office',
+    'Other',
+    'Outreach',
+  ];
+
+  const orderedCategories = [
+    ...categoryOrder.filter((category) => groupedJobs[category]),
+    ...Object.keys(groupedJobs).filter((category) => !categoryOrder.includes(category)).sort(),
+  ];
+
   const getTotalSelectedTasks = () => {
     let total = 0;
     selectedOnetActivities.forEach((activities) => {
@@ -253,36 +284,41 @@ async function proceedToTaskSelection() {
                 </div>
 
                 <div className="space-y-6">
-                  {Object.entries(groupedJobs).map(([category, categoryJobs]) => (
-                    <div key={category}>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                        {category}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {categoryJobs.map((job) => (
-                          <label
-                            key={job.id}
-                            className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                              selectedJobIds.has(job.id)
-                                ? 'border-teal-500 bg-teal-50'
-                                : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedJobIds.has(job.id)}
-                              onChange={() => toggleJobSelection(job.id)}
-                              className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-teal-500 focus:ring-2"
-                            />
-                            <div className="flex-1">
-                              <div className="font-semibold text-gray-900">{job.title}</div>
-                              <div className="text-sm text-gray-600 mt-1">{job.description}</div>
-                            </div>
-                          </label>
-                        ))}
+                  {orderedCategories.map((category) => {
+                    const categoryJobs = groupedJobs[category];
+                    if (!categoryJobs) return null;
+
+                    return (
+                      <div key={category}>
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                          {category}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {categoryJobs.map((job) => (
+                            <label
+                              key={job.id}
+                              className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                selectedJobIds.has(job.id)
+                                  ? 'border-teal-500 bg-teal-50'
+                                  : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedJobIds.has(job.id)}
+                                onChange={() => toggleJobSelection(job.id)}
+                                className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-teal-500 focus:ring-2"
+                              />
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-900">{job.title}</div>
+                                <div className="text-sm text-gray-600 mt-1">{job.description}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {selectedJobIds.size > 0 && (
@@ -353,9 +389,7 @@ async function proceedToTaskSelection() {
                               </label>
                             ))
                           ) : (
-                            <p className="text-sm text-red-500">
-                              No activities found for this job.
-                            </p>
+                            <p className="text-sm text-red-500">No activities found for this job.</p>
                           )}
                         </div>
                       </div>
