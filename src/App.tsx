@@ -138,8 +138,9 @@ export default function App() {
     'Professional Development',
     'Research',
     'Teaching',
+     'Outreach',
     'Other',
-    'Outreach'
+    
   ];
 
   const ordered = [
