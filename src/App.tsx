@@ -70,59 +70,56 @@ function App() {
     setSelectedJobIds(newSelected);
   }
 
-  async function proceedToTaskSelection() {
-    if (selectedJobIds.size === 0) return;
+async function proceedToTaskSelection() {
+  if (selectedJobIds.size === 0) return;
 
-    setLoading(true);
-    const jobsData: JobWithOnetActivities[] = [];
+  setLoading(true);
+  const jobsData: JobWithOnetActivities[] = [];
 
-    for (const jobId of Array.from(selectedJobIds)) {
-      const job = jobs.find((j) => j.id === jobId);
-      if (!job) continue;
+  for (const jobId of Array.from(selectedJobIds)) {
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job) continue;
 
-      const { data, error } = await supabase
-        .from('job_onet_activities')
-        .select(`
-          onet_activities (
-            id,
-            name,
-            description,
-            nace_competency_id
-          )
-        `)
-        .eq('job_id', jobId);
+    const { data: links, error: linksError } = await supabase
+      .from('job_onet_activities')
+      .select('onet_activity_id')
+      .eq('job_id', jobId);
 
-      if (error) {
-        console.error(`Error loading activities for job ${jobId}:`, error);
-        continue;
-      }
-
-      const activities = ((data ?? []) as JobOnetActivityJoinRow[])
-        .flatMap((row) => {
-          if (!row.onet_activities) return [];
-          return Array.isArray(row.onet_activities)
-            ? row.onet_activities
-            : [row.onet_activities];
-        })
-        .filter(
-          (activity): activity is OnetActivity =>
-            !!activity &&
-            typeof activity.id === 'string' &&
-            typeof activity.name === 'string' &&
-            typeof activity.description === 'string' &&
-            typeof activity.nace_competency_id === 'string'
-        );
-
-      jobsData.push({
-        ...job,
-        onet_activities: activities,
-      });
+    if (linksError) {
+      console.error('Error loading links:', linksError);
+      continue;
     }
 
-    setJobsWithActivities(jobsData);
-    setStep('select-tasks');
-    setLoading(false);
+    const activityIds = (links ?? []).map((row) => row.onet_activity_id);
+
+    if (activityIds.length === 0) {
+      jobsData.push({
+        ...job,
+        onet_activities: []
+      });
+      continue;
+    }
+
+    const { data: activities, error: activitiesError } = await supabase
+      .from('onet_activities')
+      .select('*')
+      .in('id', activityIds);
+
+    if (activitiesError) {
+      console.error('Error loading activities:', activitiesError);
+      continue;
+    }
+
+    jobsData.push({
+      ...job,
+      onet_activities: activities || []
+    });
   }
+
+  setJobsWithActivities(jobsData);
+  setStep('select-tasks');
+  setLoading(false);
+}
 
   function toggleOnetActivity(jobId: string, activityId: string) {
     const newMap = new Map(selectedOnetActivities);
