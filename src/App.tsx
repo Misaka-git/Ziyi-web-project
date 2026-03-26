@@ -1,9 +1,5 @@
-// 🔥 ONLY 2 THINGS CHANGED:
-// 1. categoryOrder
-// 2. orderedCategories logic
 
-// ==============================
-// KEEP EVERYTHING ELSE SAME
+
 // ==============================
 
 import { useState, useEffect } from 'react';
