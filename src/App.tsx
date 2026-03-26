@@ -144,7 +144,7 @@ export default function App() {
   ];
 
 
-    const ordered = categoryOrder.filter((c) => grouped[c]);
+const orderedCategories = categoryOrder.filter((c) => groupedJobs[c]);
    
 
   if (loading) return <div className="p-10 text-center">Loading...</div>;
