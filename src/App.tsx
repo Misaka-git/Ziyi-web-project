@@ -144,7 +144,7 @@ export default function App() {
   ];
 
   const ordered = [
-    ...categoryOrder.filter(c => grouped[c]),
+    const ordered = categoryOrder.filter((c) => grouped[c]);
     ...Object.keys(grouped).filter(c => !categoryOrder.includes(c))
   ];
 
