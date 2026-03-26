@@ -143,10 +143,9 @@ export default function App() {
     
   ];
 
-  const ordered = [
+
     const ordered = categoryOrder.filter((c) => grouped[c]);
-    ...Object.keys(grouped).filter(c => !categoryOrder.includes(c))
-  ];
+   
 
   if (loading) return <div className="p-10 text-center">Loading...</div>;
 
