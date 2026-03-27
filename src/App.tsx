@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { Briefcase, CheckCircle2, GraduationCap, TrendingUp, ArrowRight } from 'lucide-react';
@@ -44,7 +43,7 @@ function App() {
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .order('title', { ascending: true });
+      .order('category', { ascending: true });
 
     if (error) {
       console.error('Error loading jobs:', error);
@@ -74,13 +73,13 @@ function App() {
       const job = jobs.find(j => j.id === jobId);
       if (!job) continue;
 
-      const { data: links, error: linksError } = await supabase
+      const { data: jobOnetLinks, error: linksError } = await supabase
         .from('job_onet_activities')
         .select('onet_activity_id')
         .eq('job_id', jobId);
 
       if (linksError) {
-        console.error(`Error loading activity links for job ${jobId}:`, linksError);
+        console.error('Error loading job/activity links:', linksError);
         jobsData.push({
           ...job,
           onet_activities: []
@@ -88,7 +87,7 @@ function App() {
         continue;
       }
 
-      const activityIds = (links || [])
+      const activityIds = (jobOnetLinks || [])
         .map(link => link.onet_activity_id)
         .filter(Boolean);
 
@@ -106,7 +105,7 @@ function App() {
         .in('id', activityIds);
 
       if (activitiesError) {
-        console.error(`Error loading activities for job ${jobId}:`, activitiesError);
+        console.error('Error loading activities:', activitiesError);
         jobsData.push({
           ...job,
           onet_activities: []
@@ -354,31 +353,27 @@ function App() {
                         <h3 className="text-xl font-bold text-gray-900 mb-4">{job.title}</h3>
 
                         <div className="space-y-2">
-                          {job.onet_activities.length > 0 ? (
-                            job.onet_activities.map((activity) => (
-                              <label
-                                key={activity.id}
-                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                  selectedOnetActivities.get(job.id)?.has(activity.id)
-                                    ? 'border-teal-500 bg-teal-50'
-                                    : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedOnetActivities.get(job.id)?.has(activity.id) || false}
-                                  onChange={() => toggleOnetActivity(job.id, activity.id)}
-                                  className="mt-0.5 w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
-                                />
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900">{activity.name}</div>
-                                  <div className="text-sm text-gray-600 mt-0.5">{activity.description}</div>
-                                </div>
-                              </label>
-                            ))
-                          ) : (
-                            <p className="text-sm text-red-500">No activities found for this job.</p>
-                          )}
+                          {job.onet_activities.map((activity) => (
+                            <label
+                              key={activity.id}
+                              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                selectedOnetActivities.get(job.id)?.has(activity.id)
+                                  ? 'border-teal-500 bg-teal-50'
+                                  : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedOnetActivities.get(job.id)?.has(activity.id) || false}
+                                onChange={() => toggleOnetActivity(job.id, activity.id)}
+                                className="mt-0.5 w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">{activity.name}</div>
+                                <div className="text-sm text-gray-600 mt-0.5">{activity.description}</div>
+                              </div>
+                            </label>
+                          ))}
                         </div>
                       </div>
                     ))}
