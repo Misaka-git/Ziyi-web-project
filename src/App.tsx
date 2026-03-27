@@ -174,6 +174,26 @@ function App() {
     return acc;
   }, {} as Record<string, Job[]>);
 
+  const categoryOrder = [
+    'Academic',
+    'Clinical',
+    'Conservation',
+    'Industry',
+    'Leadership',
+    'Outreach',
+    'Professional Development',
+    'Research',
+    'Teaching'
+  ];
+
+  const orderedCategories = [
+    ...categoryOrder.filter(category => groupedJobs[category]),
+    ...Object.keys(groupedJobs)
+      .filter(category => !categoryOrder.includes(category) && category !== 'Other')
+      .sort(),
+    ...(groupedJobs['Other'] ? ['Other'] : [])
+  ];
+
   const getTotalSelectedTasks = () => {
     let total = 0;
     selectedOnetActivities.forEach(activities => {
@@ -229,36 +249,41 @@ function App() {
                 </div>
 
                 <div className="space-y-6">
-                  {Object.entries(groupedJobs).map(([category, categoryJobs]) => (
-                    <div key={category}>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                        {category}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {categoryJobs.map((job) => (
-                          <label
-                            key={job.id}
-                            className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                              selectedJobIds.has(job.id)
-                                ? 'border-teal-500 bg-teal-50'
-                                : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedJobIds.has(job.id)}
-                              onChange={() => toggleJobSelection(job.id)}
-                              className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-teal-500 focus:ring-2"
-                            />
-                            <div className="flex-1">
-                              <div className="font-semibold text-gray-900">{job.title}</div>
-                              <div className="text-sm text-gray-600 mt-1">{job.description}</div>
-                            </div>
-                          </label>
-                        ))}
+                  {orderedCategories.map((category) => {
+                    const categoryJobs = groupedJobs[category];
+                    if (!categoryJobs) return null;
+
+                    return (
+                      <div key={category}>
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                          {category}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {categoryJobs.map((job) => (
+                            <label
+                              key={job.id}
+                              className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                selectedJobIds.has(job.id)
+                                  ? 'border-teal-500 bg-teal-50'
+                                  : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedJobIds.has(job.id)}
+                                onChange={() => toggleJobSelection(job.id)}
+                                className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-teal-500 focus:ring-2"
+                              />
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-900">{job.title}</div>
+                                <div className="text-sm text-gray-600 mt-1">{job.description}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {selectedJobIds.size > 0 && (
