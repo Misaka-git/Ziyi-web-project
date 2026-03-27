@@ -99,7 +99,7 @@ npm run build
 - ⚠️ 定期备份你的 Supabase 数据库
 - ![image alt](https://github.com/Misaka-git/Ziyi-web-project/blob/cae6b9e43320db027b2717ca00019aeb5047c3f3/Screenshot%202026-03-26%20201912.png)
 - ![image alt](https://github.com/Misaka-git/Ziyi-web-project/blob/a57bf05ab64c615e61aee84c84e7ad0e262d22ad/image.png)
-- 
+- ![image alt](https://github.com/Misaka-git/Ziyi-web-project/blob/a06b392664204ece1f1db508f01ffe4e1df46d07/Screenshot%202026-03-26%20202056.png)
 - 
 
 
