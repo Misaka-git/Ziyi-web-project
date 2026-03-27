@@ -97,6 +97,7 @@ npm run build
 - ⚠️ 不要将 `.env` 文件提交到 git 仓库
 - ⚠️ 确保 Supabase 项目的 Row Level Security (RLS) 策略已正确配置
 - ⚠️ 定期备份你的 Supabase 数据库
+- ![image alt](https://github.com/Misaka-git/Ziyi-web-project/blob/cae6b9e43320db027b2717ca00019aeb5047c3f3/Screenshot%202026-03-26%20201912.png)
 ![image alt](https://github.com/Misaka-git/Ziyi-web-project/blob/a57bf05ab64c615e61aee84c84e7ad0e262d22ad/image.png)
 - 
 - 
