@@ -41,33 +41,26 @@ function App() {
   }, []);
 
   async function loadJobs() {
-    setLoading(true);
-
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .order('category', { ascending: true })
       .order('title', { ascending: true });
 
     if (error) {
       console.error('Error loading jobs:', error);
-      setJobs([]);
     } else {
       setJobs(data || []);
     }
-
     setLoading(false);
   }
 
   function toggleJobSelection(jobId: string) {
     const newSelected = new Set(selectedJobIds);
-
     if (newSelected.has(jobId)) {
       newSelected.delete(jobId);
     } else {
       newSelected.add(jobId);
     }
-
     setSelectedJobIds(newSelected);
   }
 
@@ -78,7 +71,7 @@ function App() {
     const jobsData: JobWithOnetActivities[] = [];
 
     for (const jobId of Array.from(selectedJobIds)) {
-      const job = jobs.find((j) => j.id === jobId);
+      const job = jobs.find(j => j.id === jobId);
       if (!job) continue;
 
       const { data: links, error: linksError } = await supabase
@@ -90,40 +83,40 @@ function App() {
         console.error(`Error loading activity links for job ${jobId}:`, linksError);
         jobsData.push({
           ...job,
-          onet_activities: [],
+          onet_activities: []
         });
         continue;
       }
 
-      const activityIds = (links ?? [])
-        .map((row) => row.onet_activity_id)
+      const activityIds = (links || [])
+        .map(link => link.onet_activity_id)
         .filter(Boolean);
 
       if (activityIds.length === 0) {
         jobsData.push({
           ...job,
-          onet_activities: [],
+          onet_activities: []
         });
         continue;
       }
 
       const { data: activities, error: activitiesError } = await supabase
         .from('onet_activities')
-        .select('id, name, description, nace_competency_id')
+        .select('*')
         .in('id', activityIds);
 
       if (activitiesError) {
         console.error(`Error loading activities for job ${jobId}:`, activitiesError);
         jobsData.push({
           ...job,
-          onet_activities: [],
+          onet_activities: []
         });
         continue;
       }
 
       jobsData.push({
         ...job,
-        onet_activities: (activities ?? []) as OnetActivity[],
+        onet_activities: (activities || []) as OnetActivity[]
       });
     }
 
@@ -161,19 +154,14 @@ function App() {
       if (!selectedActivitiesForJob) continue;
 
       for (const activityId of selectedActivitiesForJob) {
-        const activity = job.onet_activities.find((a) => a.id === activityId);
+        const activity = job.onet_activities.find(a => a.id === activityId);
         if (!activity) continue;
 
-        const { data: competency, error } = await supabase
+        const { data: competency } = await supabase
           .from('nace_competencies')
           .select('*')
           .eq('id', activity.nace_competency_id)
           .maybeSingle();
-
-        if (error) {
-          console.error(`Error loading competency for activity ${activity.id}:`, error);
-          continue;
-        }
 
         if (competency) {
           if (competencyMap.has(competency.id)) {
@@ -181,7 +169,7 @@ function App() {
           } else {
             competencyMap.set(competency.id, {
               competency,
-              activities: [activity],
+              activities: [activity]
             });
           }
         }
@@ -218,21 +206,20 @@ function App() {
     'Professional Development',
     'Research',
     'Teaching',
-    'Campus',
-    'Education',
-    'Office',
-    'Other',
     'Outreach',
+    'Other'
   ];
 
   const orderedCategories = [
-    ...categoryOrder.filter((category) => groupedJobs[category]),
-    ...Object.keys(groupedJobs).filter((category) => !categoryOrder.includes(category)).sort(),
+    ...categoryOrder.filter(category => groupedJobs[category]),
+    ...Object.keys(groupedJobs)
+      .filter(category => !categoryOrder.includes(category) && category !== 'Other')
+      .sort()
   ];
 
   const getTotalSelectedTasks = () => {
     let total = 0;
-    selectedOnetActivities.forEach((activities) => {
+    selectedOnetActivities.forEach(activities => {
       total += activities.size;
     });
     return total;
@@ -280,7 +267,7 @@ function App() {
                 <div className="flex items-center gap-2 mb-6">
                   <Briefcase className="w-6 h-6 text-teal-600" />
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Step 1: Select Activities You've Completed
+                    Step 1: Select Jobs You've Completed
                   </h2>
                 </div>
 
